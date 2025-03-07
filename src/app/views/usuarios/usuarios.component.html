@@ -1,0 +1,32 @@
+<ion-header>
+  <ion-toolbar color="primary">
+    <ion-buttons slot="start">
+      <ion-back-button defaultHref="/"></ion-back-button>
+    </ion-buttons>
+    <ion-title>Usuarios</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content>
+  <ion-grid fixed>
+    <ion-row>
+      <ion-col size="2">DNI</ion-col>
+      <ion-col size="2">IDENTIFICACIÓN</ion-col>
+      <ion-col size="2">nombre</ion-col>
+      <ion-col size="2">Acciones</ion-col>
+    </ion-row>
+
+    <ng-container *ngFor="let usuario of usuarios">
+      <ion-row>
+        <ion-col size="2">{{ usuario?.dni }}</ion-col>
+        <ion-col size="2">{{ usuario?.id }}</ion-col>
+        <ion-col size="2">{{ usuario?.nombre }}</ion-col>
+        <ion-col size="2">
+          <ion-button color="danger" fill="outline" (click)="eliminarUsuario(usuario)">
+            Eliminar
+          </ion-button>
+        </ion-col>
+      </ion-row>
+    </ng-container>
+  </ion-grid>
+</ion-content>
