@@ -26,6 +26,7 @@ import {
   IonToolbar,
   IonTitle,
   IonHeader, IonBackButton, IonButtons, IonSpinner, IonSelectOption, IonSelect, IonSearchbar, IonAvatar } from '@ionic/angular/standalone';
+import { Router } from '@angular/router';
 
 @Component({
   standalone: true,
@@ -73,7 +74,8 @@ export class ComputadoraPage implements OnInit {
   constructor(
     private firestoreService: FirestoreService,
     private fb: FormBuilder,
-    private changeDetectorRef: ChangeDetectorRef
+    private changeDetectorRef: ChangeDetectorRef,
+    private router:Router
   ) {
     this.computadoraForm = this.fb.group({
       id: [''],
@@ -190,6 +192,12 @@ async agregarOEditarComputadora() {
     this.imagenComputadora = null;
   }
 
+  verDetalles(computadora: Computadoras) {
+    // Navegar al componente de detalles con el ID de la computadora
+    console.log('Navegar a detalles de la computadora:', computadora);
+    // Implementa la navegación (requiere importar Router)
+    this.router.navigate(['/computadora-detalle', computadora.id]);
+  }
 
 
 

@@ -8,7 +8,7 @@ import { CommonModule } from '@angular/common';
 import { IonicModule } from '@ionic/angular';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { Observable } from 'rxjs';
-
+import { formatDate } from '@angular/common';
 
 @Component({
   standalone: true,
@@ -23,9 +23,12 @@ CommonModule,
   styleUrls: ['./usuarios.component.scss'],
 })
 export class UsuariosPage implements OnInit {
-
   usuarios: UserI[] = [];
-  usuariosPendientes: any[] = [];
+  mostrarModal = false; // Controla el modal
+  subscripcionSeleccionada: any = null; // Contendrá los datos de la suscripción
+  usuariosFiltrados: UserI[] = [];
+  filtroDNI: string = '';
+  filtroActivo: string = 'todos'; // 'todos', 'activos', 'inactivos'
 
   constructor(
     private firestoreService: FirestoreService,
@@ -39,6 +42,7 @@ export class UsuariosPage implements OnInit {
   async cargarUsuarios() {
     try {
       this.usuarios = await this.UserService.getAllUsers();
+      this.usuariosFiltrados = [...this.usuarios]; // Inicializar con todos los usuarios
       console.log('Usuarios cargados:', this.usuarios);
     } catch (error) {
       console.error('Error cargando usuarios:', error);
@@ -63,5 +67,78 @@ export class UsuariosPage implements OnInit {
   }
 }
 
+async toggleActivo(usuario: UserI) {
+  try {
+    const nuevoEstado = !usuario.active; // Alternar entre true y false
+    await this.UserService.updateUserState(usuario.id, { active: nuevoEstado });
+    usuario.active = nuevoEstado; // Actualizar el estado localmente
+    console.log(`Usuario ${usuario.nombre} actualizado a ${nuevoEstado ? 'activo' : 'inactivo'}`);
+  } catch (error) {
+    console.error('Error al cambiar el estado de activo:', error);
+    window.alert('No se pudo actualizar el estado del usuario. Inténtalo de nuevo.');
+  }
+}
+
+async verDatosSubscripcion(subscriptionId: string) {
+  try {
+    const subscripcion = await this.firestoreService.getSubscripcionPorId(subscriptionId);
+    if (subscripcion) {
+      this.subscripcionSeleccionada = subscripcion;
+      this.mostrarModal = true;
+    } else {
+      window.alert('No se encontraron datos para esta suscripción.');
+    }
+  } catch (error) {
+    console.error('Error obteniendo los datos de la suscripción:', error);
+    window.alert('Error obteniendo los datos de la suscripción.');
+  }
+}
+
+cerrarModal() {
+  this.mostrarModal = false;
+  this.subscripcionSeleccionada = null;
+}
+
+irChatWhatsApp(telefono: number) {
+  if (telefono) {
+    const url = `https://wa.me/${telefono}`;
+    window.open(url, '_blank');
+  } else {
+    window.alert('El usuario no tiene un número de teléfono registrado.');
+  }
+}
+
+getEstadoLegible(status: string): string {
+  if (status === 'approved') {
+    return 'Pagada';
+  } else if (status === 'pending') {
+    return 'Pago pendiente';
+  } else {
+    return 'Estado desconocido';
+  }
+}
+
+formatFecha(fecha: string | Date): string {
+  return formatDate(fecha, 'dd/MM/yyyy', 'en-US');
+}
+
+aplicarFiltros() {
+  this.usuariosFiltrados = this.usuarios.filter((usuario) => {
+    const coincideDNI = this.filtroDNI
+      ? usuario.dni.toString().includes(this.filtroDNI)
+      : true;
+
+    const coincideActivo =
+      this.filtroActivo === 'todos'
+        ? true
+        : this.filtroActivo === 'activos'
+        ? usuario.active
+        : !usuario.active;
+
+    return coincideDNI && coincideActivo;
+  });
+}
 
 }
+
+

@@ -4,4 +4,5 @@ export interface UserI {
   nombre:string;
   dni:string;
   active:boolean;
+  telefono:number;
 }

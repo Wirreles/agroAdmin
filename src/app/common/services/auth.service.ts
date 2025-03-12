@@ -16,15 +16,14 @@ export class UserService {
   public user$: Observable<UserI | null>;
 
 constructor(private afAuth: AngularFireAuth, private afs: AngularFirestore) {
-    this.usersCollection = this.afs.collection<UserI>('users');
-    this.pendingUsersCollection = this.afs.collection('pendingUsers');
+    this.usersCollection = this.afs.collection<UserI>('usuarios');
     this.userSubject = new BehaviorSubject<UserI | null>(null);
     this.user$ = this.userSubject.asObservable();
 
     this.afAuth.authState.pipe(
       switchMap(user => {
         if (user) {
-          return this.afs.collection<UserI>('users').doc(user.uid).valueChanges();
+          return this.afs.collection<UserI>('usuarios').doc(user.uid).valueChanges();
         } else {
           return new Observable<UserI | null>(observer => observer.next(null));
         }
@@ -72,7 +71,7 @@ constructor(private afAuth: AngularFireAuth, private afs: AngularFirestore) {
   // Método para obtener todos los usuarios de la colección 'users'
   async getAllUsers(): Promise<UserI[]> {
     try {
-      const userRecords = await this.usersCollection.get().toPromise();
+      const userRecords = await this.afs.collection<UserI>('usuarios').get().toPromise();
       const users = userRecords.docs.map(doc => ({
         id: doc.id,
         ...doc.data()
@@ -84,6 +83,7 @@ constructor(private afAuth: AngularFireAuth, private afs: AngularFirestore) {
       return [];
     }
   }
+
 
   // Método para obtener todos los usuarios pendientes de la colección 'pendingUsers'
   async getPendingUsers(): Promise<any[]> {
@@ -128,5 +128,16 @@ async approveUser(userId: string): Promise<void> {
     console.error('Error approving user:', error);
   }
 }
+
+async updateUserState(userId: string, updates: Partial<UserI>): Promise<void> {
+  try {
+    await this.usersCollection.doc(userId).update(updates);
+    console.log(`Estado del usuario ${userId} actualizado en Firestore.`);
+  } catch (error) {
+    console.error('Error actualizando el estado del usuario:', error);
+    throw error;
+  }
+}
+
 
 }

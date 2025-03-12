@@ -14,7 +14,8 @@ import {
   writeBatch,
   setDoc,
   collectionData,
-  startAfter, limit, DocumentData
+  startAfter, limit, DocumentData,
+  getDoc
 } from '@angular/fire/firestore';
 import { UserI } from '../models/users.models';
 
@@ -30,6 +31,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { Observable } from 'rxjs';
 import { User } from 'firebase/auth';
 import { Computadoras } from '../models/computadora.model';
+import { ConsultaI } from '../models/consultas.model';
 
 
 @Injectable({
@@ -137,6 +139,92 @@ export class FirestoreService {
     }
   }
 
+  async addArchivo(computadoraId: string, seccion: string, archivo: File) {
+    const storageRef = ref(this.storage, `computadoras/${computadoraId}/${seccion}/${archivo.name}`);
+    const uploadTask = uploadBytesResumable(storageRef, archivo);
+    await uploadTask;
+    const url = await getDownloadURL(storageRef);
+
+    const docRef = doc(collection(this.firestore, `computadoras/${computadoraId}/${seccion}`));
+    await setDoc(docRef, { nombre: archivo.name, url });
+  }
+
+  async getArchivos(computadoraId: string, seccion: string): Promise<any[]> {
+    const archivosSnapshot = await getDocs(collection(this.firestore, `computadoras/${computadoraId}/${seccion}`));
+    return archivosSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+  }
+
+
+// Obtener una computadora por su ID
+async getComputadoraById(id: string): Promise<Computadoras | null> {
+  try {
+    const docRef = doc(this.firestore, 'computadoras', id); // Referencia al documento
+    const docSnap = await getDoc(docRef); // Obtener el documento
+
+    if (docSnap.exists()) {
+      return { id: docSnap.id, ...docSnap.data() } as Computadoras; // Devolver los datos con el ID
+    } else {
+      console.log(`No se encontró una computadora con el ID: ${id}`);
+      return null; // Si no existe, devuelve null
+    }
+  } catch (error) {
+    console.error('Error al obtener la computadora por ID:', error);
+    throw error; // Manejar el error
+  }
+}
+
+
+
+
+  async getSubscripcionPorId(subscriptionId: string): Promise<any> {
+    try {
+      const subscripcionSnapshot = await getDocs(
+        query(
+          collection(this.firestore, 'subscriptions'),
+          where('subscriptionId', '==', subscriptionId)
+        )
+      );
+      if (!subscripcionSnapshot.empty) {
+        return subscripcionSnapshot.docs[0].data();
+      } else {
+        return null;
+      }
+    } catch (error) {
+      console.error('Error obteniendo la suscripción:', error);
+      throw error;
+    }
+  }
+
+  async getConsultas(): Promise<ConsultaI[]> {
+    const consultasSnapshot = await getDocs(collection(this.firestore, 'consultas'));
+    return consultasSnapshot.docs.map((doc) => ({
+      id: doc.id,
+      ...doc.data(),
+    })) as ConsultaI[];
+  }
+
+  async deleteConsulta(id: string): Promise<void> {
+    try {
+      const consultaRef = doc(this.firestore, 'consultas', id);
+      await deleteDoc(consultaRef);
+      console.log(`Consulta eliminada: ${id}`);
+    } catch (error) {
+      console.error('Error eliminando consulta:', error);
+      throw error;
+    }
+  }
+
+  async addConsulta(consulta: ConsultaI): Promise<void> {
+    try {
+      const id = uuidv4();
+      const consultaRef = doc(this.firestore, 'consultas', id);
+      await setDoc(consultaRef, { ...consulta, id });
+      console.log(`Consulta añadida con id: ${id}`);
+    } catch (error) {
+      console.error('Error añadiendo consulta:', error);
+      throw error;
+    }
+  }
 }
 
 
